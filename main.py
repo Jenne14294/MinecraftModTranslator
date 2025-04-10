@@ -15,7 +15,8 @@ class Translator_function():
         self.current_locale = locale.getdefaultlocale()
         self.current_lang = self.current_locale[0].replace("_","-") if "_" in self.current_locale[0] else self.current_locale[0]
 
-        self.info = GoogleTranslator(source='auto', target='zh-TW').translate("正在翻譯", dest = self.current_lang)
+        self.info = "正在翻譯"
+        # self.info = GoogleTranslator(source='auto', target='zh-TW').translate("正在翻譯", dest = self.current_lang)
 
     def translate_text(self, text):
         return GoogleTranslator(source='auto', target='zh-TW').translate(text)
