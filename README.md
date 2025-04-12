@@ -1,4 +1,4 @@
-# Minecraft 模組翻譯器
+# Minecraft 模組翻譯器 (JAVA Edition)
 
 在玩 Minecraft 模組時，是否因為語言障礙無法享受遊戲內容？很多模組的文本是英文或其他語言，讓玩家感到困惑。
 現在，我們的 **Minecraft 模組翻譯器** 可以幫助你輕鬆解決這個問題！
