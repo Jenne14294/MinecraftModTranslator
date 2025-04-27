@@ -1,6 +1,7 @@
 import sys
 import os
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QComboBox
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel, QComboBox, QProgressBar
+
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QIcon, QColor, QPalette, QFont
 from deep_translator import GoogleTranslator
@@ -10,6 +11,7 @@ from main import Translator_function
 class TranslateThread(QThread):
     # 用來通知UI更新的信號
     update_signal = pyqtSignal(str)
+    progress_signal = pyqtSignal(int)
 
     def __init__(self, folder_path, language, parent=None):
         super().__init__(parent)
@@ -18,7 +20,7 @@ class TranslateThread(QThread):
         self.translator = Translator_function()
 
     def run(self):
-        Translator_function.start_translate(self.translator, self.folder_path, self.language, self.update_signal)
+        Translator_function.start_translate(self.translator, self.folder_path, self.language, self.update_signal, self.progress_signal)
 
 class TranslatorApp(QWidget):
     def __init__(self):
@@ -62,14 +64,19 @@ class TranslatorApp(QWidget):
 
         # 顯示結果
         self.result_label = QLabel("", self)
-        self.result_label.setStyleSheet("color: #FFFFFF; font-size: 14px;")
+        self.result_label.setStyleSheet("color: #FFFFFF; font-size: 16px;")
         layout.addWidget(self.result_label)
+
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setFixedHeight(20)
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
 
         # 顯示翻譯資訊
         self.info_label1 = QLabel("", self)
         self.info_label2 = QLabel("", self)
-        self.info_label1.setStyleSheet("color: #A8A8A8; font-size: 14px;")
-        self.info_label2.setStyleSheet("color: #A8A8A8; font-size: 14px;")
+        self.info_label1.setStyleSheet("color: #FFFFFF; font-size: 16px;")
+        self.info_label2.setStyleSheet("color: #FFFFFF; font-size: 16px;")
         layout.addWidget(self.info_label1)
         layout.addWidget(self.info_label2)
 
@@ -85,7 +92,7 @@ class TranslatorApp(QWidget):
     def set_style(self):
         # 設置背景顏色，加入漸層背景
         palette = QPalette()
-        palette.setColor(QPalette.Background, QColor(26, 32, 44))  # 深藍色背景
+        palette.setColor(QPalette.Background, QColor(255, 85, 0))  # 橙紅色背景
         self.setAutoFillBackground(True)
         self.setPalette(palette)
 
@@ -103,11 +110,9 @@ class TranslatorApp(QWidget):
             padding: 12px;
             border-radius: 12px;
             border: none;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
         }
         QPushButton:hover {
             background-color: #45a049;
-            box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.3);
         }
         QPushButton:pressed {
             background-color: #388E3C;
@@ -120,7 +125,7 @@ class TranslatorApp(QWidget):
         QComboBox {
             background-color: #333333;
             color: #FFFFFF;
-            font-size: 14px;
+            font-size: 16px;
             border-radius: 8px;
             padding: 8px;
         }
@@ -143,6 +148,7 @@ class TranslatorApp(QWidget):
             # 創建並啟動翻譯後台執行緒
             self.translation_thread = TranslateThread(self.folder_path, selected_language)
             self.translation_thread.update_signal.connect(self.update_result)
+            self.translation_thread.progress_signal.connect(self.progress_bar.setValue)
             self.translation_thread.start()
         else:
             self.result_label.setText("請先選擇資料夾！")

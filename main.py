@@ -3,14 +3,11 @@ import os
 import json
 import shutil
 import locale
-import opencc
-import time
 
 from deep_translator import GoogleTranslator
 
 class Translator_function():
     def __init__(self):
-        self.cc = opencc.OpenCC('s2t.json')
         # 初始化程式
         self.current_locale = locale.getdefaultlocale()
         self.current_lang = self.current_locale[0].replace("_","-") if "_" in self.current_locale[0] else self.current_locale[0]
@@ -22,7 +19,7 @@ class Translator_function():
         return GoogleTranslator(source='auto', target='zh-TW').translate(text)
 
 
-    def modify_jar(self, jar_path, file, language_iso):
+    def modify_jar(self, jar_path, file, language_iso, progress_signal):
         try:
             if os.path.exists(self.temp_path):
                 os.remove(self.temp_path)
@@ -34,7 +31,9 @@ class Translator_function():
             print()
             return
 
-        result = self.modify_lang(self.temp_path, language_iso)
+        progress = 0
+        progress_signal.emit(progress)
+        result = self.modify_lang(self.temp_path, language_iso, progress_signal)
             # 將修改後的資料夾重新壓縮成 JAR 檔案
         if result:
             with zipfile.ZipFile(jar_path, 'a', zipfile.ZIP_DEFLATED) as jar_file:
@@ -46,7 +45,7 @@ class Translator_function():
                 jar_file.write(source_path, arcname=archive_path)
                 # 或者 jar_file.write(file=source_path, arcname=archive_path)
 
-    def modify_lang(self, dir, language_iso):
+    def modify_lang(self, dir, language_iso, progress_signal):
             dir = os.path.join(dir, "assets")
             if os.path.exists(dir):
                 for folder in os.listdir(dir):
@@ -66,30 +65,36 @@ class Translator_function():
                             with open(cn_json, "r", encoding="utf-8-sig") as file:
                                 data = json.load(file)
 
-                            new_data = {k: self.cc.convert(v) for k, v in data.items()}
-
-                            with open(final_json, "w", encoding="utf-8") as file:
-                                json.dump(new_data, file, indent=4, ensure_ascii=False)
-
-                            dirpath, filename = os.path.split(final_path)
-                            return (dirpath, filename)
-
                         elif os.path.exists(en_json):
                             with open(en_json, "r", encoding="utf-8-sig") as file:
                                 data = json.load(file)
 
-                            new_data = {k: self.translate_text(v) if isinstance(v, str) else v for k, v in data.items()}
+                        else:
+                            return False
 
-                            with open(final_json, "w", encoding="utf-8") as file:
-                                json.dump(new_data, file, indent=4, ensure_ascii=False)
+                        total = len(data)
+                        count = 0
+                        new_data = {}
+                        for k, v in data.items():
+                            if isinstance(v, str):
+                                new_data[k] = self.translate_text(v)
+                            else:
+                                new_data[k] = v
 
-                            dirpath, filename = os.path.split(final_path)
-                            return (dirpath, filename)
+                            count += 1
+                            progress = int((count / total) * 100)
+                            progress_signal.emit(progress)
+
+                        with open(final_json, "w", encoding="utf-8") as file:
+                            json.dump(new_data, file, indent=4, ensure_ascii=False)
+
+                        dirpath, filename = os.path.split(final_path)
+                        return (dirpath, filename)
                         
                     return False
             return False
 
-    def start_translate(self, root_path, language_iso, signal=None):
+    def start_translate(self, root_path, language_iso, update_signal=None, progress_signal=None):
         # os.mkdir(self.temp_path)
         # if self.reset_temp(root_path):
             self.root = root_path
@@ -100,11 +105,11 @@ class Translator_function():
                 if file.name.endswith(".jar"):
                     filepath = os.path.join(root_path, file.name)
                     
-                    if signal:
-                        signal.emit(f"{self.info} : {file.name}\n第 {index + 1} 個 / 共 {count} 個")
+                    if update_signal:
+                        update_signal.emit(f"{self.info} : {file.name}\n第 {index + 1} 個 / 共 {count} 個")
 
-                    self.modify_jar(filepath, file.name, language_iso)
+                    self.modify_jar(filepath, file.name, language_iso, progress_signal)
                     shutil.rmtree(self.temp_path, ignore_errors=True)
 
-            if signal:
-                signal.emit(f"全數模組以翻譯完成！")
+            if update_signal:
+                update_signal.emit(f"全數模組以翻譯完成！")
