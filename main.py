@@ -50,13 +50,14 @@ class Translator_function():
             if os.path.exists(dir):
                 for folder in os.listdir(dir):
                     new_dir = os.path.join(dir, folder, "lang")
+
                     if os.path.exists(new_dir):
                         final_json = os.path.join(new_dir, f"{language_iso}.json")
                         cn_json = os.path.join(new_dir, f"zh_cn.json")
                         en_json = os.path.join(new_dir, f"en_us.json")
 
                         final_path = os.path.relpath(final_json, self.temp_path)
-                        
+
                         if os.path.exists(final_json):
                             print(f"該模組已存在 {language_iso} 檔案")
                             return False
@@ -91,7 +92,7 @@ class Translator_function():
                         dirpath, filename = os.path.split(final_path)
                         return (dirpath, filename)
                         
-                    return False
+                return False
             return False
 
     def start_translate(self, root_path, language_iso, update_signal=None, progress_signal=None):
